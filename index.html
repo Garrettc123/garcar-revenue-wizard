@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Garcar Revenue System Wizard</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=boska@500,700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root,[data-theme=light]{--bg:#f7f6f2;--surface:#fbfbf9;--off:#f3f0ec;--border:#d4d1ca;--text:#28251d;--muted:#6b6a65;--primary:#01696f;--primary-h:#0c4e54;--inv:#f9f8f4;--err:#a13544}
+[data-theme=dark]{--bg:#171614;--surface:#1c1b19;--off:#22211f;--border:#393836;--text:#cdccca;--muted:#9a9996;--primary:#4f98a3;--primary-h:#6bb0ba;--inv:#171614;--err:#dd6974}
+body{font-family:'Satoshi',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:1rem;min-height:100dvh}
+header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:.75rem;font-family:'Boska',serif;font-size:1.5rem;font-weight:700}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.icon{padding:.5rem;border-radius:.5rem;min-width:44px;min-height:44px;border:1px solid var(--border)}
+main{max-width:860px;margin:0 auto;padding:1.5rem 1rem 6rem}
+.steps{display:flex;gap:.25rem;margin-bottom:1.5rem;overflow-x:auto}
+.steps button{flex:1;min-width:84px;padding:.5rem;font-size:.875rem;border-bottom:3px solid var(--border);color:var(--muted);text-align:left}
+.steps button.on{border-color:var(--primary);color:var(--text);font-weight:700}
+.steps button.done{border-color:var(--primary)}
+h1{font-family:'Boska',serif;font-size:1.75rem;line-height:1.15;margin-bottom:.5rem}
+p.lead{color:var(--muted);margin-bottom:1.5rem;max-width:62ch}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:.75rem;padding:1.25rem;margin-bottom:1rem}
+label{display:block;font-weight:500;margin-bottom:.25rem;font-size:.9375rem}
+input[type=text],input[type=number],textarea,select{width:100%;padding:.75rem;border:1px solid var(--border);border-radius:.5rem;background:var(--bg);color:var(--text);margin-bottom:1rem;font-size:1rem}
+textarea{min-height:90px}
+.opt{display:flex;gap:.75rem;align-items:flex-start;padding:.75rem;border:1px solid var(--border);border-radius:.5rem;margin-bottom:.5rem;cursor:pointer;background:var(--bg)}
+.opt input{margin-top:.3rem;width:20px;height:20px;accent-color:var(--primary)}
+.opt small{display:block;color:var(--muted)}
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:.75rem 1rem;display:flex;justify-content:space-between;gap:1rem}
+.btn{padding:.75rem 1.25rem;border-radius:.5rem;min-height:44px;font-weight:700;border:1px solid var(--border)}
+.btn.p{background:var(--primary);color:var(--inv);border-color:var(--primary)}
+.btn.p:hover{background:var(--primary-h)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.err{color:var(--err);font-size:.875rem;margin:0 0 1rem}
+pre{background:var(--off);padding:1rem;border-radius:.5rem;overflow:auto;font-size:.8125rem;max-height:340px;margin-top:1rem}
+table{width:100%;border-collapse:collapse;font-size:.9375rem}
+td,th{padding:.5rem;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+.row{display:flex;gap:.5rem;flex-wrap:wrap}
+.note{font-size:.875rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+<div class="brand"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" role="img" aria-label="Garcar logo"><path d="M6 24V8h20M12 24h14V14H16"></path></svg>Garcar Revenue Wizard</div>
+<button class="icon" id="theme" aria-label="Toggle theme">◐</button>
+</header>
+<main>
+<nav class="steps" id="steps" aria-label="Progress"></nav>
+<section id="view"></section>
+</main>
+<div class="nav"><button class="btn" id="back" disabled>Back</button><button class="btn p" id="next">Next</button></div>
+<script>
+const S={
+  profile:{
+    name:'Garcar Enterprise',
+    niche:'DFW / Johnson County real-estate team leads — backup rules so new leads get called before they go elsewhere',
+    offer:'DFW real-estate lead backup: install rules around the CRM they already use so new leads get called within minutes. Written leakage baseline + prioritized fixes + 30-day recovery map. Delivery in 3 business days.',
+    price:'2500',
+    goal:'10000',
+    capacity:'10'
+  },
+  stack:{crm:'hubspot',pay:'stripe',orch:'Garcar RHNS / NEXUS + Linear',extras:['Email sending','Calendar booking']},
+  stages:['New lead','Contacted','Call booked','Call held','Proposal sent','Won','Lost'],
+  auto:[0,1,4,5,7],
+  agents:{mode:'draft',cap:'0',review:true,log:true,killswitch:true},
+  checks:{0:true,1:true,2:true,3:true,4:true,5:true,6:true,7:true}
+};
+const AUTO=[
+  ['Lead intake: form to CRM contact + deal','Every inbound lead lands in one place'],
+  ['Speed-to-lead: instant reply + task','Contact within minutes while intent is high'],
+  ['Stalled deal alert after N days','Surfaces deals with no activity'],
+  ['Meeting booked: stage move + reminder','Reduces no-shows'],
+  ['Proposal sent: payment link attached','Shortens time to cash'],
+  ['Failed payment: retry + notify','Recovers revenue already earned'],
+  ['Closed-lost: 30/90-day reactivation','Re-engages past leads'],
+  ['Weekly KPI digest','Meetings, show rate, close rate, cash collected']
+];
+const CHECKS=[
+  'I have a clear paid offer with a price',
+  'I own the CRM and Stripe accounts (admin access)',
+  'API keys are stored in a secrets manager, never in code or chat',
+  'Test/sandbox mode is used before live mode',
+  'Outreach complies with CAN-SPAM, TCPA and local rules (consent, opt-out)',
+  'Agents cannot move money or contact new leads without approval',
+  'A kill switch and audit log exist',
+  'I will verify every metric from real data, not estimates'
+];
+const names=['Profile','Offer','Stack','Pipeline','Automations','Agents','Safety','Plan'];
+let i=0;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&','<':'<','>':'>','"':'"'}[c]));
+function field(l,k,type,ph){return '<label for="f_'+k+'">'+l+'</label><input id="f_'+k+'" data-k="'+k+'" type="'+(type||'text')+'" placeholder="'+(ph||'')+'">'}
+function valid(){
+  if(i==0&&!S.profile.name.trim())return 'Business name is required.';
+  if(i==1){if(!S.profile.offer.trim())return 'Describe your offer.';if(!(+S.profile.price>0))return 'Enter a real price greater than 0.'}
+  if(i==3&&S.stages.filter(x=>x.trim()).length<3)return 'Keep at least 3 stages.';
+  if(i==6){const n=CHECKS.filter((_,j)=>!S.checks[j]).length;if(n)return n+' safety item(s) still unchecked.'}
+  return ''
+}
+function owner(k){return k in S.profile?S.profile:(k in S.stack?S.stack:S.agents)}
+function render(){
+  $('#steps').innerHTML=names.map((n,j)=>'<button class="'+(j==i?'on':'')+' '+(j<i?'done':'')+'" data-j="'+j+'">'+(j+1)+'. '+n+'</button>').join('');
+  $('#steps').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(+b.dataset.j<=i){i=+b.dataset.j;render()}});
+  const v=$('#view');let h='';
+  if(i==0)h='<h1>Your business</h1><p class="lead">Basic facts the plan is built on. Nothing leaves your browser tab.</p><div class="card">'+field('Business name','name')+field('Niche / customer','niche','text','e.g. real estate investors in Texas')+field('Weekly hours you can put into sales','capacity','number')+'</div>';
+  if(i==1)h='<h1>One paid offer</h1><p class="lead">Revenue starts with one offer a buyer can say yes to. Describe the problem and the outcome.</p><div class="card"><label for="f_offer">Offer (problem solved + deliverable)</label><textarea id="f_offer" data-k="offer"></textarea>'+field('Price (USD)','price','number')+field('Monthly revenue goal (USD), your own number','goal','number')+'<p class="note">Conversion rates are not guessed here. Enter real ones after your first 20-30 conversations.</p></div>';
+  if(i==2)h='<h1>Tool stack</h1><p class="lead">Pick one CRM and one payment rail. Fewer tools means fewer failure points.</p><div class="card"><label for="crm">CRM</label><select id="crm"><option value="hubspot">HubSpot</option><option value="other">Other / existing CRM</option></select><label for="pay">Payments</label><select id="pay"><option value="stripe">Stripe</option><option value="other">Other</option></select>'+field('Orchestration / agent layer','orch','text','e.g. your own agent service, n8n, Zapier')+'</div><div class="card"><strong>Optional integrations</strong><div style="height:.5rem"></div>'+['Email sending','Calendar booking','Project management','Database / data warehouse','SMS'].map(x=>'<label class="opt"><input type="checkbox" data-x="'+x+'" '+(S.stack.extras.includes(x)?'checked':'')+'><span>'+x+'</span></label>').join('')+'</div>';
+  if(i==3)h='<h1>Pipeline stages</h1><p class="lead">One stage per line. Each stage needs a clear entry rule.</p><div class="card"><label for="stg">Stages</label><textarea id="stg" style="min-height:180px"></textarea></div>';
+  if(i==4)h='<h1>Automations</h1><p class="lead">Choose what to switch on first. Start small and measure.</p><div class="card">'+AUTO.map((a,j)=>'<label class="opt"><input type="checkbox" data-a="'+j+'" '+(S.auto.includes(j)?'checked':'')+'><span><strong>'+a[0]+'</strong><small>'+a[1]+'</small></span></label>').join('')+'</div>';
+  if(i==5)h='<h1>Agent permissions</h1><p class="lead">Give agents the least power that still helps.</p><div class="card"><label for="mode">Autonomy level</label><select id="mode"><option value="read">Read-only: monitor and report</option><option value="draft">Draft: write messages, a human approves</option><option value="act">Act: send within limits, logged</option></select>'+field('Max spend per action, USD (0 = none)','cap','number')+'<label class="opt"><input type="checkbox" id="rev" '+(S.agents.review?'checked':'')+'><span>Human approval for first contact with any new lead</span></label><label class="opt"><input type="checkbox" id="log" '+(S.agents.log?'checked':'')+'><span>Audit log of every agent action</span></label><label class="opt"><input type="checkbox" id="kill" '+(S.agents.killswitch?'checked':'')+'><span>One-click kill switch</span></label></div>';
+  if(i==6)h='<h1>Safety checklist</h1><p class="lead">Confirm every item before the plan is generated.</p><div class="card">'+CHECKS.map((c,j)=>'<label class="opt"><input type="checkbox" data-c="'+j+'" '+(S.checks[j]?'checked':'')+'><span>'+c+'</span></label>').join('')+'</div>';
+  if(i==7){const p=plan();h='<h1>Your build plan</h1><p class="lead">Generated only from your answers. Export it as the spec for your build.</p><div class="card"><table><tr><th>Item</th><th>Value</th></tr>'+p.rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>').join('')+'</table></div><div class="card"><strong>Revenue math (your inputs only)</strong><p>'+esc(p.math)+'</p></div><div class="row"><button class="btn p" id="dl1">Download JSON config</button><button class="btn" id="dl2">Download Markdown plan</button></div><pre>'+esc(JSON.stringify(p.json,null,2))+'</pre>'}
+  v.innerHTML=h+'<p class="err" id="err" role="alert"></p>';
+  v.querySelectorAll('[data-k]').forEach(el=>{const k=el.dataset.k,o=owner(k);el.value=o[k];el.oninput=()=>o[k]=el.value});
+  if(i==2){['crm','pay'].forEach(k=>{const e=$('#'+k);e.value=S.stack[k];e.onchange=()=>S.stack[k]=e.value});v.querySelectorAll('[data-x]').forEach(c=>c.onchange=()=>{const x=c.dataset.x;S.stack.extras=c.checked?S.stack.extras.concat([x]):S.stack.extras.filter(y=>y!=x)})}
+  if(i==3){const t=$('#stg');t.value=S.stages.join('\n');t.oninput=()=>S.stages=t.value.split('\n')}
+  if(i==4)v.querySelectorAll('[data-a]').forEach(c=>c.onchange=()=>{const j=+c.dataset.a;S.auto=c.checked?S.auto.concat([j]):S.auto.filter(y=>y!=j)});
+  if(i==5){$('#mode').value=S.agents.mode;$('#mode').onchange=e=>S.agents.mode=e.target.value;$('#rev').onchange=e=>S.agents.review=e.target.checked;$('#log').onchange=e=>S.agents.log=e.target.checked;$('#kill').onchange=e=>S.agents.killswitch=e.target.checked}
+  if(i==6)v.querySelectorAll('[data-c]').forEach(c=>c.onchange=()=>S.checks[+c.dataset.c]=c.checked);
+  if(i==7){const p=plan();$('#dl1').onclick=()=>dl('garcar-config.json',JSON.stringify(p.json,null,2));$('#dl2').onclick=()=>dl('garcar-plan.md',p.md)}
+  $('#back').disabled=i==0;$('#next').style.display=i==7?'none':'';window.scrollTo(0,0)
+}
+function plan(){
+  const pr=+S.profile.price,g=+S.profile.goal;
+  const sales=pr>0&&g>0?Math.ceil(g/pr):null;
+  const math=sales?'To reach $'+g.toLocaleString()+' per month at $'+pr.toLocaleString()+' per sale you need '+sales+' sale(s) per month. Divide by your measured close rate and show rate to get the calls and leads required. Those rates are unknown until you measure them.':'Enter price and goal to compute required sales.';
+  const autos=S.auto.map(j=>AUTO[j][0]);
+  const stages=S.stages.filter(x=>x.trim());
+  const rows=[['Business',S.profile.name],['Niche',S.profile.niche],['Offer',S.profile.offer],['Price','$'+S.profile.price],['CRM / Payments',S.stack.crm+' / '+S.stack.pay],['Orchestration',S.stack.orch||'not chosen'],['Extras',S.stack.extras.join(', ')||'none'],['Stages',stages.join(' > ')],['Automations',autos.join('; ')||'none'],['Agent mode',S.agents.mode],['Spend cap per action','$'+S.agents.cap]];
+  const json={business:S.profile,stack:S.stack,pipeline:stages,automations:autos,agents:S.agents,requiredSalesPerMonth:sales};
+  const md='# '+S.profile.name+' Revenue System Plan\n\n- Offer: '+S.profile.offer+'\n- Price: $'+S.profile.price+'\n- Goal: $'+S.profile.goal+'/mo\n- Stack: '+S.stack.crm+' + '+S.stack.pay+'\n- Pipeline: '+stages.join(' > ')+'\n\n## Automations\n'+autos.map(a=>'- '+a).join('\n')+'\n\n## Agent policy\n- Mode: '+S.agents.mode+'\n- Human approval for new leads: '+S.agents.review+'\n- Audit log: '+S.agents.log+'\n- Kill switch: '+S.agents.killswitch+'\n- Spend cap per action: $'+S.agents.cap+'\n\n## Math\n'+math+'\n\n## 30-day order\n1. Sell the offer manually to the first 5 buyers.\n2. Connect lead intake to the CRM.\n3. Add Stripe payment links to proposals.\n4. Turn on one automation at a time and measure.\n5. Review real numbers weekly.\n';
+  return{rows,math,json,md}
+}
+function dl(n,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t]));a.download=n;a.click()}
+$('#next').onclick=()=>{const e=valid();if(e){$('#err').textContent=e;return}i++;render()};
+$('#back').onclick=()=>{i--;render()};
+let d=matchMedia('(prefers-color-scheme:dark)').matches;const rt=document.documentElement;rt.dataset.theme=d?'dark':'light';
+$('#theme').onclick=()=>{d=!d;rt.dataset.theme=d?'dark':'light'};
+render();
+</script>
+</body>
+</html>
